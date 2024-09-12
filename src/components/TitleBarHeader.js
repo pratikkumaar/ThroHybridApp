@@ -19,7 +19,7 @@ export const TitleBarHeader = ({titleBarText,leftIcon,rightIcon,onLeftPressed,on
         {leftIcon}
       </TouchableOpacity>
 
-      <Text style={{color:black,fontWeight:700,fontSize:18}}>{titleBarText}</Text>
+      <Text style={{color:black,fontFamily:'Nunito-ExtraBold',fontSize:18}}>{titleBarText}</Text>
 
       <TouchableOpacity onPress={onRightPressed}>
         {rightIcon}

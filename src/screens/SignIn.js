@@ -11,15 +11,15 @@ export default SignIn = () =>{
     useEffect(()=>{},focus)
 
     return(<SafeAreaView style={{height:'100%',marginHorizontal:30}}>
-        <Text style={{marginTop:'35%',alignSelf:'center',color:black,fontWeight:'700',fontSize:30}}> 
+        <Text style={{marginTop:'35%',alignSelf:'center',color:black,fontFamily:'Nunito-ExtraBold',fontSize:30}}> 
             Log In
         </Text>
 
-        <Text style={{marginTop:10,alignSelf:'center',color:grey,fontWeight:'100',fontSize:15}}> 
+        <Text style={{marginTop:10,alignSelf:'center',color:grey,fontFamily:'Nunito-Regular',fontSize:15}}> 
             Enter your credentials to Login
         </Text>
 
-        <Text style={{marginTop:'30%',color:grey,fontWeight:'100',fontSize:15}}> 
+        <Text style={{marginTop:'30%',color:grey,fontFamily:'Nunito-Regular',fontSize:15}}> 
             Mobile No.
         </Text>
 
@@ -31,7 +31,7 @@ export default SignIn = () =>{
 
         <View style={{height:1,width:'100%',backgroundColor:grey}}/>
 
-        <Text style={{marginTop:15,color:grey,fontWeight:'100',fontSize:15}}> 
+        <Text style={{marginTop:15,color:grey,fontFamily:'Nunito-Regular',fontSize:15}}> 
             Password
         </Text>
 
@@ -44,7 +44,7 @@ export default SignIn = () =>{
 
         <View style={{height:1,width:'100%',backgroundColor:grey}}/>
 
-        <Text style={{marginTop:15,color:primaryColor,fontWeight:'500',fontSize:15}}> 
+        <Text style={{marginTop:15,color:primaryColor,fontFamily:'Nunito-Bold',fontSize:15}}> 
             Forgot Password?
         </Text>
 
@@ -57,12 +57,12 @@ export default SignIn = () =>{
 
         <View style={{flexDirection:'row',marginTop:10,alignItems:'center',alignSelf:'center'}}>
             
-            <Text style={{marginStart:10,color:grey,fontWeight:'100',fontSize:15}}> 
+            <Text style={{marginStart:10,color:grey,fontFamily:'Nunito-Medium',fontSize:15}}> 
                 Don't have an account?
             </Text>
 
             <TouchableOpacity onPress={()=>{navigation.navigate('JoinUs')}}>
-                <Text style={{marginStart:5,color:primaryColor,fontWeight:'100',fontWeight:500,fontSize:15}}> 
+                <Text style={{marginStart:5,color:primaryColor,fontFamily:'Nunito-Medium',fontWeight:500,fontSize:15}}> 
                     Sign Up
                 </Text>
             </TouchableOpacity>
