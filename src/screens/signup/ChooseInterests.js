@@ -1,4 +1,4 @@
-import {useNavigation} from '@react-navigation/native';
+import {CommonActions, useNavigation} from '@react-navigation/native';
 import {useEffect, useState} from 'react';
 import {
   ScrollView,
@@ -15,20 +15,63 @@ import {
   transparent,
   white,
 } from '../../theme/Colors';
-import {APIServiceGET} from '../../utils/APIService';
-import {GET_INTERESTS} from '../../utils/Constants';
+import {APIServiceGET, APIServicePOSTWithSession} from '../../utils/APIService';
+import {
+  CHOOSE_INTERESTS,
+  GET_INTERESTS,
+  ROUTE_SIGN_IN,
+  USER_SESSION_FOR_SIGNUP,
+} from '../../utils/Constants';
+import {
+  ErrorMessage,
+  ErrorMessageWithDescription,
+} from '../../utils/FlashMessage';
+import {getLocalData} from '../../utils/LocalStorage';
 
 export default PersonalDetails = () => {
   const navigation = useNavigation();
-  const [selectedActvity, setSelectedActvity] = useState('');
   const [activities, setActivities] = useState([]);
+  const [authToken, setAuthToken] = useState('');
   const [selectedChips, setSelectedChips] = useState([]);
 
   useEffect(() => {
-    {
-      getInterests();
-    }
+    getInterests();
+    getSession();
   }, []);
+
+  const getSession = async () => {
+    await getLocalData(USER_SESSION_FOR_SIGNUP).then(res => {
+      setAuthToken(res);
+    });
+  };
+
+  const completeProfile = async () => {
+    if (selectedChips.length == 0) {
+      ErrorMessageWithDescription(
+        'Choose Interests',
+        'At least choose one interest',
+      );
+      return;
+    } else {
+      console.log(selectedChips);
+      const res = await APIServicePOSTWithSession(
+        'POST',
+        selectedChips,
+        CHOOSE_INTERESTS,
+        authToken,
+      );
+      if (res.statusCode == 200) {
+        navigation.dispatch(
+          CommonActions.reset({
+            index: 0,
+            routes: [{name: ROUTE_SIGN_IN}],
+          }),
+        );
+      } else {
+        ErrorMessage(res.message);
+      }
+    }
+  };
 
   const getInterests = async () => {
     const res = await APIServiceGET(GET_INTERESTS);
@@ -36,13 +79,13 @@ export default PersonalDetails = () => {
   };
 
   // Function to handle chip press
-  const toggleChip = _id => {
-    if (selectedChips.includes(_id)) {
+  const toggleChip = name => {
+    if (selectedChips.includes(name)) {
       // If the chip is already selected, remove it from the selection
-      setSelectedChips(selectedChips.filter(chipId => chipId !== _id));
+      setSelectedChips(selectedChips.filter(chipId => chipId !== name));
     } else {
       // Otherwise, add the chip to the selection
-      setSelectedChips([...selectedChips, _id]);
+      setSelectedChips([...selectedChips, name]);
     }
   };
 
@@ -73,14 +116,14 @@ export default PersonalDetails = () => {
       <ScrollView contentContainerStyle={styles.container}>
         <View style={styles.chipContainer}>
           {activities.map(item => {
-            const isSelected = selectedChips.includes(item._id);
+            const isSelected = selectedChips.includes(item.name);
             return (
               <TouchableOpacity
-                key={item._id}
+                key={item.name}
                 style={[
                   isSelected ? styles.selectedChip : styles.unSelectedChip,
                 ]}
-                onPress={() => toggleChip(item._id)} // Toggle the chip selection
+                onPress={() => toggleChip(item.name)} // Toggle the chip selection
               >
                 <Text
                   style={[
@@ -99,6 +142,9 @@ export default PersonalDetails = () => {
         <FilledButton
           style={{marginVertical: '20%', marginHorizontal: 30}}
           lable={'Continue'}
+          onPress={() => {
+            completeProfile();
+          }}
         />
       </View>
     </View>

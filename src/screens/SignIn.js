@@ -1,76 +1,189 @@
-import { useEffect, useState } from "react"
-import { SafeAreaView, Text, TextInput, TouchableOpacity, View } from "react-native"
-import { black, grey, primaryColor, white } from "../theme/Colors"
-import { useNavigation } from "@react-navigation/native";
+import {useEffect, useState} from 'react';
+import {
+  KeyboardAvoidingView,
+  SafeAreaView,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import {black, grey, primaryColor, white} from '../theme/Colors';
+import {useNavigation} from '@react-navigation/native';
+import {ErrorMessage, ErrorMessageWithDescription} from '../utils/FlashMessage';
+import {useNetwork} from '../context/NetworkContext';
+import {
+  JOIN_US,
+  ROUTE_JOIN_US,
+  ROUTE_VERIFY_OTP,
+  SEND_OTP_FOR_LOGIN,
+  VERIFY_OTP,
+} from '../utils/Constants';
+import {InputField} from '../components/InputField';
+import {APIServicePOST} from '../utils/APIService';
 
-export default SignIn = () =>{
-    const [tncCheck,setTncCheck] = useState(true);
-    const [focus,setFocus] = useState(false);
-    const navigation = useNavigation();
+export default SignIn = () => {
+  const [mobileNo, setMobileNo] = useState('');
+  const [password, setPassword] = useState('');
+  const [tncCheck, setTncCheck] = useState(true);
+  const [focus, setFocus] = useState(false);
+  const navigation = useNavigation();
+  const {loading, error, data, callPostAPI} = useNetwork();
 
-    useEffect(()=>{},focus)
+  /*   useEffect(() => {}, focus); */
 
-    return(<SafeAreaView style={{height:'100%',marginHorizontal:30}}>
-        <Text style={{marginTop:'35%',alignSelf:'center',color:black,fontFamily:'Nunito-ExtraBold',fontSize:30}}> 
-            Log In
-        </Text>
+  /* useEffect(() => {
+    console.log('data', data);
+  }, data); */
 
-        <Text style={{marginTop:10,alignSelf:'center',color:grey,fontFamily:'Nunito-Regular',fontSize:15}}> 
-            Enter your credentials to Login
-        </Text>
+  const validateSignIn = async () => {
+    console.log(mobileNo.length);
+    if (mobileNo.length != 10) {
+      ErrorMessage('Enter 10 digit mobile number');
+      return;
+    }
 
-        <Text style={{marginTop:'30%',color:grey,fontFamily:'Nunito-Regular',fontSize:15}}> 
-            Mobile No.
-        </Text>
+    if (password.length < 8 || password.length > 15) {
+      ErrorMessage('Must contain 8-15 characters');
+      return;
+    }
 
-        <TextInput style={{color:black,fontSize:16}}
-        onBlur={()=>{setFocus(false)}}
-        onFocus={()=>{setFocus(true)}}
-        inputMode="numeric"
-        maxLength={10}/>
+    try {
+      const request = {
+        mobileNo: mobileNo,
+        password: password,
+      };
+      //callPostAPI(SEND_OTP_FOR_LOGIN, undefined, navigation, request);
+      const res = await APIServicePOST(request, SEND_OTP_FOR_LOGIN);
+      if (res.statusCode == 200) {
+        navigation.navigate(ROUTE_VERIFY_OTP, {
+          from: 'SignIn',
+          mobileNo: mobileNo,
+        });
+      } else if (res.statusCode == 400) {
+        ErrorMessage(res.message);
+      }
+    } catch (error) {
+      console.log(error, typeof error);
+    }
+  };
 
-        <View style={{height:1,width:'100%',backgroundColor:grey}}/>
+  return (
+    <KeyboardAvoidingView style={{height: '100%', marginHorizontal: 30}}>
+      <Text
+        style={{
+          marginTop: '35%',
+          alignSelf: 'center',
+          color: black,
+          fontFamily: 'Nunito-ExtraBold',
+          fontSize: 30,
+        }}>
+        Log In
+      </Text>
 
-        <Text style={{marginTop:15,color:grey,fontFamily:'Nunito-Regular',fontSize:15}}> 
-            Password
-        </Text>
+      <Text
+        style={{
+          marginTop: 10,
+          alignSelf: 'center',
+          color: grey,
+          fontFamily: 'Nunito-Regular',
+          fontSize: 15,
+        }}>
+        Enter your credentials to Login
+      </Text>
 
-        <TextInput style={{color:black,fontSize:16}}
-        onBlur={()=>{setFocus(false)}}
-        onFocus={()=>{setFocus(true)}}
-        inputMode="text"
+      <InputField
+        style={{marginTop: '30%'}}
+        heading={'Mobile No'}
+        value={mobileNo}
+        maxLength={10}
+        inputMode={'numeric'}
+        onBlur={val => {
+          setFocus(false);
+        }}
+        onFocus={val => {
+          setFocus(true);
+        }}
+        onChangeText={val => setMobileNo(val)}
+      />
+
+      <InputField
+        style={{marginTop: 15}}
+        heading={'Password'}
         secureTextEntry={true}
-        maxLength={20}/>
+        value={password}
+        maxLength={16}
+        onBlur={val => {
+          setFocus(false);
+        }}
+        onFocus={val => {
+          setFocus(true);
+        }}
+        onChangeText={val => setPassword(val)}
+      />
 
-        <View style={{height:1,width:'100%',backgroundColor:grey}}/>
+      <Text
+        style={{
+          marginTop: 15,
+          color: primaryColor,
+          fontFamily: 'Nunito-Bold',
+          fontSize: 15,
+        }}>
+        Forgot Password?
+      </Text>
 
-        <Text style={{marginTop:15,color:primaryColor,fontFamily:'Nunito-Bold',fontSize:15}}> 
-            Forgot Password?
-        </Text>
-
-        {!focus && <View style={{width:'100%',position:'absolute',bottom:'5%'}}>
-        <TouchableOpacity onPress={()=>{navigation.navigate('OTPVerify')}} style={{backgroundColor:primaryColor,height:50,borderRadius:30,alignItems:'center',justifyContent:'center'}}>
-            <Text style={{color:white,fontWeight:'700',fontSize:18}}> 
-                Log In
+      {!focus && (
+        <View style={{width: '100%', position: 'absolute', bottom: '5%'}}>
+          <TouchableOpacity
+            onPress={() => {
+              validateSignIn();
+            }}
+            style={{
+              backgroundColor: primaryColor,
+              height: 50,
+              borderRadius: 30,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}>
+            <Text style={{color: white, fontWeight: '700', fontSize: 18}}>
+              Log In
             </Text>
-        </TouchableOpacity>
+          </TouchableOpacity>
 
-        <View style={{flexDirection:'row',marginTop:10,alignItems:'center',alignSelf:'center'}}>
-            
-            <Text style={{marginStart:10,color:grey,fontFamily:'Nunito-Medium',fontSize:15}}> 
-                Don't have an account?
+          <View
+            style={{
+              flexDirection: 'row',
+              marginTop: 10,
+              alignItems: 'center',
+              alignSelf: 'center',
+            }}>
+            <Text
+              style={{
+                marginStart: 10,
+                color: grey,
+                fontFamily: 'Nunito-Medium',
+                fontSize: 15,
+              }}>
+              Don't have an account?
             </Text>
 
-            <TouchableOpacity onPress={()=>{navigation.navigate('JoinUs')}}>
-                <Text style={{marginStart:5,color:primaryColor,fontFamily:'Nunito-Medium',fontWeight:500,fontSize:15}}> 
-                    Sign Up
-                </Text>
+            <TouchableOpacity
+              onPress={() => {
+                navigation.navigate(ROUTE_JOIN_US);
+              }}>
+              <Text
+                style={{
+                  marginStart: 5,
+                  color: primaryColor,
+                  fontFamily: 'Nunito-Medium',
+                  fontWeight: 500,
+                  fontSize: 15,
+                }}>
+                Sign Up
+              </Text>
             </TouchableOpacity>
+          </View>
         </View>
-        </View>}
-
-
-
-        
-    </SafeAreaView>)
-}
+      )}
+    </KeyboardAvoidingView>
+  );
+};

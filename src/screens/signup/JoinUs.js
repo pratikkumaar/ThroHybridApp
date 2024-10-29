@@ -17,9 +17,15 @@ import {
   APIServicePOST,
   APIServicePOSTWithSession,
 } from '../../utils/APIService';
-import {SEND_OTP_FOR_SIGNUP} from '../../utils/Constants';
+import {
+  ROUTE_VERIFY_OTP,
+  SEND_OTP_FOR_SIGNUP,
+  VERIFY_OTP,
+} from '../../utils/Constants';
 import {showMessage} from 'react-native-flash-message';
 import {ErrorMessage} from '../../utils/FlashMessage';
+import {InputField} from '../../components/InputField';
+import OTPVerify from '../OTPVerify';
 
 export default JoinUs = () => {
   const [tncCheck, setTncCheck] = useState(true);
@@ -29,9 +35,9 @@ export default JoinUs = () => {
   const [error, setError] = useState('');
   const navigation = useNavigation();
 
-  useEffect(() => {}, focus);
+  /*  useEffect(() => {}, focus); */
 
-  useEffect(() => {}, []);
+  /*   useEffect(() => {}, []); */
 
   const Submit = async () => {
     if (mobileNo.length != 10) {
@@ -45,7 +51,10 @@ export default JoinUs = () => {
       };
       const res = await APIServicePOST(request, SEND_OTP_FOR_SIGNUP);
       if (res.statusCode == 200) {
-        navigation.navigate('OTPVerify', {from: 'JoinUs', mobileNo: mobileNo});
+        navigation.navigate(ROUTE_VERIFY_OTP, {
+          from: 'JoinUs',
+          mobileNo: mobileNo,
+        });
       } else if (res.statusCode == 400) {
         ErrorMessage(res.message);
       }
@@ -78,33 +87,20 @@ export default JoinUs = () => {
         Hey! Can we get your number please?
       </Text>
 
-      <Text
-        style={{
-          marginTop: '30%',
-          color: grey,
-          fontFamily: 'Nunito-Regular',
-          fontSize: 15,
-        }}>
-        Mobile No.
-      </Text>
-
-      <TextInput
-        style={{color: black, fontSize: 16, fontFamily: 'Nunito-Regular'}}
-        onBlur={() => {
+      <InputField
+        style={{marginTop: '30%'}}
+        heading={'Mobile No'}
+        value={mobileNo}
+        maxLength={10}
+        inputMode={'numeric'}
+        onBlur={val => {
           setFocus(false);
         }}
-        onFocus={() => {
+        onFocus={val => {
           setFocus(true);
         }}
-        value={mobileNo}
-        onChangeText={value => {
-          setMobileNo(value);
-        }}
-        inputMode="numeric"
-        maxLength={10}
+        onChangeText={val => setMobileNo(val)}
       />
-
-      <View style={{height: 1, width: '100%', backgroundColor: grey}} />
 
       {error && (
         <Text

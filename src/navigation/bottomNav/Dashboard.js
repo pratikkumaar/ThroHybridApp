@@ -22,7 +22,13 @@ import {
   subHeadingColor,
   white,
 } from '../../theme/Colors';
-import {ACTIVITY} from '../../utils/Constants';
+import {
+  ACTIVITY,
+  FILTER_THRO,
+  ROUTE_FILTER_THRO,
+  ROUTE_THRO_DETAILS,
+  THRO_DETAILS,
+} from '../../utils/Constants';
 
 export default Dashboard = () => {
   const navigation = useNavigation();
@@ -103,7 +109,7 @@ export default Dashboard = () => {
     <TouchableOpacity
       style={styles.item}
       onPress={() => {
-        navigation.navigate('ThroDetails');
+        navigation.navigate(ROUTE_THRO_DETAILS);
       }}>
       <View style={{flex: 3, alignItems: 'center'}}>
         <Image
@@ -228,7 +234,7 @@ export default Dashboard = () => {
         rightIcon={<FilterIcon />}
         onLeftPressed={() => {}}
         onRightPressed={() => {
-          navigation.navigate('FilterThro');
+          navigation.navigate(ROUTE_FILTER_THRO);
         }}
         elevation={10}
       />

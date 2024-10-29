@@ -1,23 +1,57 @@
 import {useNavigation} from '@react-navigation/native';
-import {useRef, useState} from 'react';
-import {Image, Linking, Text, TouchableOpacity, View} from 'react-native';
+import {useEffect, useRef, useState} from 'react';
+import {
+  ActivityIndicator,
+  Image,
+  Linking,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+} from 'react-native';
 import {launchCamera, launchImageLibrary} from 'react-native-image-picker';
+import ImageResizer from 'react-native-image-resizer';
 import {PERMISSIONS, RESULTS} from 'react-native-permissions';
 import {FilledButton} from '../../components/FilledButton';
 import {LargeInputField} from '../../components/LargeInputField';
-import {black, grey} from '../../theme/Colors';
+import {black, grey, primaryColor} from '../../theme/Colors';
+import {APIServicePOSTWithSession} from '../../utils/APIService';
+import {
+  COMPLETE_PERSONAL_DETAILS,
+  ROUTE_CHOOSE_INTERESTS,
+  USER_SESSION_FOR_SIGNUP,
+} from '../../utils/Constants';
+import {
+  ErrorMessage,
+  ErrorMessageWithDescription,
+  SuccessMessage,
+} from '../../utils/FlashMessage';
+import {getLocalData} from '../../utils/LocalStorage';
 import {checkPermission, requestPermission} from '../../utils/PermissionUtils';
 
-export default PersonalDetails = () => {
+export default ProfileSetup = ({route}) => {
+  const {personalDetails} = route.params;
+  const [authToken, setAuthToken] = useState('');
   const navigation = useNavigation();
-  const [selectedActvity, setSelectedActvity] = useState('');
   const [imageUri, setImageUri] = useState(null);
+  const [bio, setBio] = useState('');
+  const [profileURL, setProfileURL] = useState(undefined);
 
-  const categories = [{name: 'Male'}, {name: 'Female'}];
   const bottomSheetRef = useRef(null);
+  const [photo, setPhoto] = useState(null);
+  const [uploadStatus, setUploadStatus] = useState('');
 
   const openBottomSheet = () => {
     bottomSheetRef.current?.expand(); // Opens the bottom sheet
+  };
+
+  useEffect(() => {
+    getSession();
+  }, []);
+
+  const getSession = async () => {
+    await getLocalData(USER_SESSION_FOR_SIGNUP).then(res => {
+      setAuthToken(res);
+    });
   };
 
   // Open Image Library
@@ -68,12 +102,119 @@ export default PersonalDetails = () => {
       } else {
         const uri = response.assets[0].uri;
         setImageUri(uri);
+        compressImage(uri);
       }
     });
   };
 
+  const compressImage = async uri => {
+    try {
+      const compressedImage = await ImageResizer.createResizedImage(
+        uri,
+        800, // width
+        600, // height
+        'JPEG', // format (JPEG/PNG)
+        50, // quality (0-100)
+        0, // rotation (0 if no rotation needed)
+        undefined, // output path (undefined will use the cache directory)
+        false, // true to allow to resize the image with a larger size than the original
+      );
+
+      setPhoto(compressedImage.uri); // Set the compressed image URI
+      uploadImage(compressedImage.uri);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const uploadImage = async photo => {
+    if (!photo) {
+      console.log('No photo to upload');
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('picture', {
+      uri: Platform.OS === 'android' ? photo : photo.replace('file://', ''),
+      type: 'image/jpeg', // You can adjust this depending on the image type (png, jpg, etc.)
+      name: `${personalDetails.userName}` + '.jpg',
+    });
+    formData.append('pictureName', 'profile'); // Add the pictureName key
+
+    try {
+      const response = await fetch(
+        'http://ec2-13-60-34-131.eu-north-1.compute.amazonaws.com:4002/v1/user/uploadPicture',
+        {
+          method: 'PATCH',
+          body: formData,
+          headers: {
+            'Content-Type': 'multipart/form-data',
+            accept: 'application/json', // Accept JSON in response
+          },
+        },
+      );
+
+      if (response.ok) {
+        const jsonResponse = await response.json();
+        console.log('Upload successful', jsonResponse);
+        setProfileURL(jsonResponse.data.fileS3Url);
+        SuccessMessage('Profile image successfully uploaded');
+      } else {
+        ErrorMessageWithDescription(
+          'Image Upload Failed',
+          'Failed to upload image, please try again',
+        );
+      }
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      setUploadStatus('Upload error');
+      ErrorMessageWithDescription(
+        'Network Error',
+        'Failed to upload image, please try again',
+      );
+    }
+  };
+
+  const validateForm = async () => {
+    if (profileURL == undefined) {
+      ErrorMessageWithDescription(
+        'No Profile Found',
+        'Please Upload a image to proceed',
+      );
+      return;
+    }
+    if (bio.length < 20) {
+      ErrorMessageWithDescription(
+        'Incomplete Bio',
+        'Bio atleast contain 20 characters',
+      );
+      return;
+    }
+    personalDetails.profilePicture = profileURL;
+    personalDetails.bio = bio;
+
+    console.log('personalDetails', personalDetails);
+
+    try {
+      const res = await APIServicePOSTWithSession(
+        'PATCH',
+        personalDetails,
+        COMPLETE_PERSONAL_DETAILS,
+        authToken,
+      );
+
+      if (res.statusCode == 200) {
+        navigation.navigate(ROUTE_CHOOSE_INTERESTS);
+      } else {
+        ErrorMessage(res.message);
+      }
+    } catch (error) {
+      console.log(error, typeof error);
+    }
+  };
+
   return (
-    <View>
+    <ScrollView>
       <Text
         style={{
           marginTop: '10%',
@@ -111,6 +252,13 @@ export default PersonalDetails = () => {
             }}
             source={require('../../assets/images/upload_image_holder.png')}
           />
+        ) : profileURL == undefined ? (
+          <ActivityIndicator
+            size={150}
+            color={primaryColor}
+            style={{
+              marginTop: '20%',
+            }}></ActivityIndicator>
         ) : (
           <Image
             style={{
@@ -120,13 +268,15 @@ export default PersonalDetails = () => {
               alignSelf: 'center',
               marginTop: '20%',
             }}
-            source={{uri: imageUri}}
+            source={{uri: profileURL}}
           />
         )}
       </TouchableOpacity>
 
       <LargeInputField
         style={{marginHorizontal: 35, marginTop: '15%'}}
+        value={bio}
+        onChangeText={val => setBio(val)}
         heading={'Write a few words describing the event. (optional)'}
       />
 
@@ -134,9 +284,10 @@ export default PersonalDetails = () => {
         style={{marginVertical: '20%', marginHorizontal: 30}}
         lable={'Continue'}
         onPress={() => {
-          navigation.navigate('ChooseInterests');
+          //navigation.navigate('ChooseInterests');
+          validateForm();
         }}
       />
-    </View>
+    </ScrollView>
   );
 };

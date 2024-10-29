@@ -1,31 +1,33 @@
 import {useNavigation} from '@react-navigation/native';
+import moment from 'moment';
 import {useEffect, useState} from 'react';
 import {ScrollView, Text, View} from 'react-native';
+import DatePicker from 'react-native-date-picker';
+import Geolocation from 'react-native-geolocation-service';
+import {PERMISSIONS, RESULTS} from 'react-native-permissions';
+import CheckIcon from '../../assets/svgs/CheckIcon';
 import LocationDropIcon from '../../assets/svgs/LocationDropIcon';
 import {DropDown} from '../../components/DropDown';
 import {FilledButton} from '../../components/FilledButton';
 import {InputField} from '../../components/InputField';
 import {black, grey} from '../../theme/Colors';
-import {
-  ErrorMessage,
-  ErrorMessageWithDescription,
-} from '../../utils/FlashMessage';
-import {PERMISSIONS, RESULTS} from 'react-native-permissions';
+import {APIServiceGETWithQueryParam} from '../../utils/APIService';
+import {CHECK_USERNAME, ROUTE_PROFILE_SETUP} from '../../utils/Constants';
+import {ErrorMessageWithDescription} from '../../utils/FlashMessage';
 import {checkPermission, requestPermission} from '../../utils/PermissionUtils';
-import Geolocation from 'react-native-geolocation-service';
-import {getAddressFromLatLong} from '../../utils/MapUtils';
-import DatePicker from 'react-native-date-picker';
-import {changeDateTimeFormat} from '../../utils/DateUtils';
-import moment from 'moment';
 
-export default PersonalDetails = () => {
+export default PersonalDetails = ({route}) => {
   const navigation = useNavigation();
+  const {mobileNo} = route.params;
+  const {authToken} = route.params;
   const [gender, selectedGender] = useState('');
   const [username, setUsername] = useState('');
-  const [displayName, setDisplayName] = useState('Hi');
+  const [usernameSuccess, setUsernameSuccess] = useState(false);
+  const [usernameSuccessMsg, setUsernameSuccessMsg] = useState('');
+  const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [dateOfBirth, setDateOfBirth] = useState('01/01/2024');
+  const [dateOfBirth, setDateOfBirth] = useState('');
   const [location, setLocation] = useState('');
   const [latitude, setLatitude] = useState(null);
   const [longitude, setLongitude] = useState(null);
@@ -33,7 +35,34 @@ export default PersonalDetails = () => {
   const [date, setDate] = useState(new Date());
   const [open, setOpen] = useState(false);
 
-  const categories = [{name: 'Male'}, {name: 'Female'}];
+  useEffect(() => {
+    if (username.length > 7 && username.length < 16) {
+      setTimeout(() => {
+        checkUsername(username);
+      }, 500);
+    } else {
+      setUsernameSuccess(false);
+      setUsernameSuccessMsg('');
+    }
+  }, [username]);
+
+  const categories = [{name: 'MALE'}, {name: 'FEMALE'}];
+
+  const checkUsername = async userName => {
+    try {
+      const res = await APIServiceGETWithQueryParam(userName, CHECK_USERNAME);
+      if (res.statusCode == 200) {
+        console.log('checkusername', res);
+        setUsernameSuccess(true);
+        setUsernameSuccessMsg('Username avaliable');
+      } else if (res.statusCode == 400) {
+        //console.log('false');
+        //  ErrorMessage(res.message);
+      }
+    } catch (error) {
+      console.log(error, typeof error);
+    }
+  };
 
   const validateForm = () => {
     if (username.length < 8 || username.length > 15) {
@@ -92,6 +121,25 @@ export default PersonalDetails = () => {
       );
       return;
     }
+
+    const req = {
+      userName: username,
+      fullName: displayName,
+      email: email,
+      password: password,
+      gender: gender.name,
+      dob: dateOfBirth,
+      location: {
+        lat: latitude,
+        long: longitude,
+        address: 'A-1, Block A, Sector 71, Noida, Uttar Pradesh 201301',
+      },
+    };
+
+    navigation.navigate(ROUTE_PROFILE_SETUP, {
+      personalDetails: req,
+      authToken: authToken,
+    });
   };
 
   const handleCheckPermission = async () => {
@@ -123,7 +171,7 @@ export default PersonalDetails = () => {
         setLatitude(latitude);
         setLongitude(longitude);
         setLocation(latitude + ',' + longitude);
-        console.log(location);
+        //console.log(location);
 
         // getAddressFromLatLong(28.594594594594593, 77.38470265859395);
       },
@@ -166,6 +214,9 @@ export default PersonalDetails = () => {
           onChangeText={value => setUsername(value)}
           placeholder={'A unique name must contain 8-15 characters'}
           inputMode={'text'}
+          success={usernameSuccess}
+          successMsg={usernameSuccessMsg}
+          rightIcon={<CheckIcon />}
         />
 
         <InputField
@@ -199,6 +250,7 @@ export default PersonalDetails = () => {
           style={{marginHorizontal: 35, marginTop: 20}}
           heading={'Gender Prefrence'}
           data={categories}
+          label={'name'}
           value={gender}
           selectedValue={value => {
             selectedGender(value);
@@ -250,7 +302,7 @@ export default PersonalDetails = () => {
           style={{marginVertical: '10%', marginHorizontal: 30}}
           lable={'Continue'}
           onPress={() => {
-            navigation.navigate('ProfileSetup');
+            validateForm();
           }}
         />
       </View>
