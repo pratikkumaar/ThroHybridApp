@@ -20,6 +20,10 @@ import {
 } from '../utils/Constants';
 import {InputField} from '../components/InputField';
 import {APIServicePOST} from '../utils/APIService';
+import LinearGradient from 'react-native-linear-gradient';
+import {FilledButton} from '../components/FilledButton';
+import {apiCall} from '../utils/apicall';
+import ActivityIndicatorComponent from '../utils/ActivityIndicator';
 
 export default SignIn = () => {
   const [mobileNo, setMobileNo] = useState('');
@@ -27,7 +31,7 @@ export default SignIn = () => {
   const [tncCheck, setTncCheck] = useState(true);
   const [focus, setFocus] = useState(false);
   const navigation = useNavigation();
-  const {loading, error, data, callPostAPI} = useNetwork();
+  const [loading, setLoading] = useState(false);
 
   /*   useEffect(() => {}, focus); */
 
@@ -48,18 +52,29 @@ export default SignIn = () => {
     }
 
     try {
+      setLoading(true);
       const request = {
         mobileNo: mobileNo,
         password: password,
       };
       //callPostAPI(SEND_OTP_FOR_LOGIN, undefined, navigation, request);
-      const res = await APIServicePOST(request, SEND_OTP_FOR_LOGIN);
+      /* const res = await APIServicePOST(request, SEND_OTP_FOR_LOGIN); */
+      const res = await apiCall(
+        'POST',
+        SEND_OTP_FOR_LOGIN,
+        request,
+        null,
+        null,
+        null,
+      );
       if (res.statusCode == 200) {
+        setLoading(false);
         navigation.navigate(ROUTE_VERIFY_OTP, {
           from: 'SignIn',
           mobileNo: mobileNo,
         });
       } else if (res.statusCode == 400) {
+        setLoading(false);
         ErrorMessage(res.message);
       }
     } catch (error) {
@@ -69,6 +84,7 @@ export default SignIn = () => {
 
   return (
     <KeyboardAvoidingView style={{height: '100%', marginHorizontal: 30}}>
+      <ActivityIndicatorComponent visible={loading} text="Signing In..." />
       <Text
         style={{
           marginTop: '35%',
@@ -133,21 +149,7 @@ export default SignIn = () => {
 
       {!focus && (
         <View style={{width: '100%', position: 'absolute', bottom: '5%'}}>
-          <TouchableOpacity
-            onPress={() => {
-              validateSignIn();
-            }}
-            style={{
-              backgroundColor: primaryColor,
-              height: 50,
-              borderRadius: 30,
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}>
-            <Text style={{color: white, fontWeight: '700', fontSize: 18}}>
-              Log In
-            </Text>
-          </TouchableOpacity>
+          <FilledButton lable={'Log In'} onPress={() => validateSignIn()} />
 
           <View
             style={{

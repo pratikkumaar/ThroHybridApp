@@ -24,6 +24,7 @@ export const ROUTE_CREATE_THRO_COMPLETE = 'CreateThroComplete';
 export const ROUTE_WHAT_A_THRO = 'WhatAThro';
 export const ROUTE_PROFILE_SETUP = 'ProfileSetup';
 export const ROUTE_CHOOSE_INTERESTS = 'ChooseInterests';
+export const ROUTE_WEBVIEW = 'Webview';
 
 export const ROUTE_DASHBOARD = 'Dashboard';
 export const ROUTE_PROFILE = 'Profile';
@@ -41,6 +42,7 @@ export const BASE_URL = UAT_URL + API_VERSION;
 export const SEND_OTP_FOR_SIGNUP = '/user/mobileSignup';
 export const VERIFY_SIGNUP_OTP = '/user/verifyOtp';
 export const CHECK_USERNAME = '/user/checkUserName';
+export const CHECK_EMAIL = '/user/checkEmail';
 export const COMPLETE_PERSONAL_DETAILS = '/user/personalDetails';
 export const CHOOSE_INTERESTS = '/user/chooseInterests';
 export const SEND_OTP_FOR_LOGIN = '/user/SendOtpForlogin';
@@ -50,3 +52,7 @@ export const UPLOAD_PICTURE = '/user/uploadPicture';
 
 export const GET_INTERESTS = '/interests';
 export const GET_SUB_INTERESTS = '/interests/getSubInterests';
+
+export const GET_THROS = '/throEvents';
+
+export const GET_PROFILE = '/user/profile';

@@ -50,10 +50,6 @@ export default CreateThro = () => {
   }, []);
 
   useEffect(() => {
-    getSubInterests(selectedActvity._id);
-  }, [selectedActvity]);
-
-  useEffect(() => {
     setKms(kms);
   }, kms);
 
@@ -67,12 +63,12 @@ export default CreateThro = () => {
       {interestIds: [interestId]},
       GET_SUB_INTERESTS,
     );
-
+    setSelectedActvity(interestId);
     setSubActivities(res.data);
   };
 
   const validateForm = () => {
-    if (selectedActvity.length == 0) {
+    /*  if (selectedActvity.length == 0) {
       ErrorMessageWithDescription(
         'Select Activity',
         'Please select an activity',
@@ -103,7 +99,7 @@ export default CreateThro = () => {
       );
       return;
     }
-
+ */
     const throDetails = {
       location: {
         lat: latitude,
@@ -116,7 +112,7 @@ export default CreateThro = () => {
       catchLimit: catches,
       title: eventHeading,
     };
-    console.log('throDetails', throDetails);
+    console.log('createThroDetails', throDetails);
     navigation.navigate(ROUTE_CREATE_THRO_COMPLETE, {throDetails: throDetails});
   };
 
@@ -144,7 +140,6 @@ export default CreateThro = () => {
   };
 
   const getLocation = () => {
-    console.log('yha aaya');
     Geolocation.getCurrentPosition(
       position => {
         const {latitude, longitude} = position.coords;
@@ -203,7 +198,6 @@ export default CreateThro = () => {
         value={selectedActvity}
         label={'name'}
         selectedValue={value => {
-          setSelectedActvity(value._id);
           getSubInterests(value._id);
         }}
       />

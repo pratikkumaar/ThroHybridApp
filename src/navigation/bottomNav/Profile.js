@@ -1,29 +1,37 @@
-import React from 'react';
+import React, {useCallback, useEffect} from 'react';
 import {
-  View,
-  Text,
-  SafeAreaView,
-  Image,
-  AppState,
   Dimensions,
+  Image,
+  SafeAreaView,
   StyleSheet,
+  Text,
+  View,
 } from 'react-native';
-import {black, grey, lightGrey, primaryColor, white} from '../../theme/Colors';
-import {TitleBarHeader} from '../../components/TitleBarHeader';
-import BackIcon from '../../assets/svgs/BackIcon';
-import FilterIcon from '../../assets/svgs/FilterIcon';
+import {SceneMap, TabBar, TabView} from 'react-native-tab-view';
 import MoreIcon from '../../assets/svgs/MoreIcon';
+import {TitleBarHeader} from '../../components/TitleBarHeader';
 import {appStyle} from '../../theme/AppStyle';
-import {TabView, SceneMap, TabBar} from 'react-native-tab-view';
+import {black, grey, lightGrey, primaryColor, white} from '../../theme/Colors';
+import {apiCall} from '../../utils/apicall';
+import {GET_PROFILE} from '../../utils/Constants';
+import {useNavigation} from '@react-navigation/native';
 
 export default Profile = () => {
   const initialLayout = {width: Dimensions.get('window').width};
+  const bottomSheetRef = React.useRef(null);
   const [index, setIndex] = React.useState(0);
+  const navigation = useNavigation();
   const [routes] = React.useState([
-    {key: 'chats', title: 'Details'},
-    {key: 'status', title: 'Thro Created'},
-    {key: 'calls', title: 'Thro Caught'},
+    {key: 'Details', title: 'Details'},
+    {key: 'ThroCreated', title: 'Thro Created'},
+    {key: 'ThroCaught', title: 'Thro Caught'},
   ]);
+
+  // callbacks
+  const handleSheetChanges = useCallback(index => {
+    /* if (index === 1) onClose();  */
+    // Close the sheet when collapsed
+  });
 
   const ChatsRoute = () => (
     <View style={[styles.scene]}>
@@ -44,10 +52,27 @@ export default Profile = () => {
   );
 
   const renderScene = SceneMap({
-    chats: ChatsRoute,
-    status: StatusRoute,
-    calls: CallsRoute,
+    Details: ChatsRoute,
+    ThroCreated: StatusRoute,
+    ThroCaught: CallsRoute,
   });
+
+  useEffect(() => {
+    getProfileData();
+
+    // ref
+  }, []);
+
+  const getProfileData = async () => {
+    const res = await apiCall(
+      'GET',
+      GET_PROFILE,
+      null,
+      null,
+      true,
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2NjllYTI1ODY2OGY5NTkyYTMzNmMzMDEiLCJtb2JpbGVObyI6IjgwMDQwMzczOTgiLCJzZXNzaW9uSWQiOiI2NzUzNTRiYjkzNTJjZDFhZGU1M2JiOGEiLCJpYXQiOjE3MzM1MTQ0Mjd9.4OHBMcPOc-gthoPgad9ECXOd30BNhfZ4-FGCGvAbw9c',
+    );
+  };
   return (
     <SafeAreaView style={{height: '100%', backgroundColor: white}}>
       <TitleBarHeader
@@ -58,6 +83,14 @@ export default Profile = () => {
         elevation={10}
       />
 
+      {/*    <GestureHandlerRootView style={styles.container}>
+        <BottomSheet ref={bottomSheetRef} onChange={handleSheetChanges}>
+          <BottomSheetView style={styles.contentContainer}>
+            <Text>Awesome 🎉</Text>
+          </BottomSheetView>
+        </BottomSheet>
+      </GestureHandlerRootView>
+ */}
       <View
         style={{
           marginHorizontal: 25,
@@ -161,5 +194,14 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 14,
     textTransform: 'capitalize',
+  },
+  container: {
+    flex: 1,
+    backgroundColor: 'grey',
+  },
+  contentContainer: {
+    flex: 1,
+    padding: 36,
+    alignItems: 'center',
   },
 });

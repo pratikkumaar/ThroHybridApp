@@ -19,23 +19,19 @@ import {SeekSlider} from '../../../components/SeekSlider';
 import {FilledButton} from '../../../components/FilledButton';
 import {LargeInputField} from '../../../components/LargeInputField';
 import {ROUTE_WHAT_A_THRO, WHAT_A_THRO} from '../../../utils/Constants';
+import DatePicker from 'react-native-date-picker';
+import {sendDateToBackend} from '../../../components/DateFormatter';
+import moment from 'moment';
 
 export default CreateThroComplete = () => {
   const navigation = useNavigation();
-  const [selectedActvity, setSelectedActvity] = useState('');
-  const [selectedSortValue, setSelectedSortValue] = useState('');
-  const [showPicker, setShowPicker] = useState(false);
+  const [gender, setGender] = useState('');
   const [kms, setKms] = useState(15);
-  const [catches, setCatches] = useState(5);
-  const [date, setDate] = useState(new Date('2012-12-12'));
-  const categories = [{name: 'Any'}, {name: 'Male'}, {name: 'Female'}];
+  const genderList = [{name: 'Any'}, {name: 'Male'}, {name: 'Female'}];
 
-  const sortBy = [
-    {name: 'Newest'},
-    {name: 'Oldest'},
-    {name: 'Expiring Soon'},
-    {name: 'Nearest'},
-  ];
+  const [date, setDate] = useState(new Date());
+  const [open, setOpen] = useState(false);
+  const [startDate, setStartDate] = useState();
 
   useEffect(() => {
     console.log('kms', kms);
@@ -81,10 +77,11 @@ export default CreateThroComplete = () => {
       <DropDown
         style={{marginHorizontal: 35, marginTop: '10%'}}
         heading={'Gender Prefrence'}
-        data={categories}
-        value={selectedActvity}
+        data={genderList}
+        value={gender}
+        label={'name'}
         selectedValue={value => {
-          setSelectedActvity(value);
+          setGender(value);
         }}
       />
 
@@ -92,21 +89,65 @@ export default CreateThroComplete = () => {
         style={{marginHorizontal: 35, marginTop: 20}}
         heading={'Start Date & Time'}
         isEditable={false}
-        value={new Date().toLocaleString()}
+        onPress={() => {
+          setOpen(true);
+        }}
+        value={startDate}
         rightIcon={<CalendarPickerIcon />}
       />
 
-      <InputField
-        style={{marginHorizontal: 35, marginTop: 20}}
-        heading={'End Date & Time'}
-        isEditable={false}
-        value={new Date().toLocaleString()}
-        rightIcon={<CalendarPickerIcon />}
+      <DatePicker
+        modal
+        open={open}
+        date={date}
+        mode="datetime"
+        maximumDate={new Date()}
+        minimumDate={new Date()}
+        onConfirm={date => {
+          setOpen(false);
+          setDate(date);
+          setStartDate(sendDateToBackend(date));
+        }}
+        onCancel={() => {
+          setOpen(false);
+        }}
       />
 
       <InputField
         style={{marginHorizontal: 35, marginTop: 20}}
         heading={'Cut-Off Date & Time'}
+        isEditable={false}
+        onPress={() => {
+          setOpen(true);
+        }}
+        value={new Date().toLocaleString()}
+        rightIcon={<CalendarPickerIcon />}
+      />
+
+      <DatePicker
+        modal
+        open={open}
+        date={date}
+        mode="date"
+        maximumDate={new Date('2005-01-01')}
+        minimumDate={
+          startDate == ''
+            ? new Date()
+            : new Date(moment(startDate).format('YYYY-MM-DD'))
+        }
+        onConfirm={date => {
+          setOpen(false);
+          setDate(date);
+          setStartDate(sendDateToBackend(date));
+        }}
+        onCancel={() => {
+          setOpen(false);
+        }}
+      />
+
+      <InputField
+        style={{marginHorizontal: 35, marginTop: 20}}
+        heading={'End Date & Time'}
         isEditable={false}
         value={new Date().toLocaleString()}
         rightIcon={<CalendarPickerIcon />}

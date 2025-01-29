@@ -28,8 +28,11 @@ import {
   ROUTE_SPLASH,
   ROUTE_THRO_DETAILS,
   ROUTE_VERIFY_OTP,
+  ROUTE_WEBVIEW,
   ROUTE_WHAT_A_THRO,
 } from '../utils/Constants';
+import WebViewPage from '../screens/WebviewScreen';
+import WebViewScreen from '../screens/WebviewScreen';
 
 const AppNavigation = () => {
   const Stack = createNativeStackNavigator();
@@ -104,6 +107,11 @@ const AppNavigation = () => {
           <Stack.Screen
             name={ROUTE_WHAT_A_THRO}
             component={WhatAThro}
+            options={{headerShown: false}}
+          />
+          <Stack.Screen
+            name={ROUTE_WEBVIEW}
+            component={WebViewScreen}
             options={{headerShown: false}}
           />
         </Stack.Navigator>

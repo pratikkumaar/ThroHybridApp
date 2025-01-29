@@ -27,6 +27,7 @@ import {
 } from '../../utils/FlashMessage';
 import {getLocalData} from '../../utils/LocalStorage';
 import {checkPermission, requestPermission} from '../../utils/PermissionUtils';
+import {apiCall} from '../../utils/apicall';
 
 export default ProfileSetup = ({route}) => {
   const {personalDetails} = route.params;
@@ -50,6 +51,7 @@ export default ProfileSetup = ({route}) => {
 
   const getSession = async () => {
     await getLocalData(USER_SESSION_FOR_SIGNUP).then(res => {
+      console.log('session', res);
       setAuthToken(res);
     });
   };
@@ -194,15 +196,15 @@ export default ProfileSetup = ({route}) => {
     personalDetails.bio = bio;
 
     console.log('personalDetails', personalDetails);
-
+    const res = await apiCall(
+      'PATCH',
+      COMPLETE_PERSONAL_DETAILS,
+      personalDetails,
+      null,
+      true,
+      authToken,
+    );
     try {
-      const res = await APIServicePOSTWithSession(
-        'PATCH',
-        personalDetails,
-        COMPLETE_PERSONAL_DETAILS,
-        authToken,
-      );
-
       if (res.statusCode == 200) {
         navigation.navigate(ROUTE_CHOOSE_INTERESTS);
       } else {

@@ -27,6 +27,7 @@ import {
   ErrorMessageWithDescription,
 } from '../../utils/FlashMessage';
 import {getLocalData} from '../../utils/LocalStorage';
+import {apiCall} from '../../utils/apicall';
 
 export default PersonalDetails = () => {
   const navigation = useNavigation();
@@ -53,13 +54,22 @@ export default PersonalDetails = () => {
       );
       return;
     } else {
-      console.log(selectedChips);
-      const res = await APIServicePOSTWithSession(
+      // console.log(authToken);
+      const res = await apiCall(
+        'POST',
+        CHOOSE_INTERESTS,
+        {interests: selectedChips},
+        null,
+        true,
+        authToken,
+      );
+
+      /* const res = await APIServicePOSTWithSession(
         'POST',
         selectedChips,
         CHOOSE_INTERESTS,
         authToken,
-      );
+      ); */
       if (res.statusCode == 200) {
         navigation.dispatch(
           CommonActions.reset({
@@ -79,13 +89,13 @@ export default PersonalDetails = () => {
   };
 
   // Function to handle chip press
-  const toggleChip = name => {
-    if (selectedChips.includes(name)) {
+  const toggleChip = _id => {
+    if (selectedChips.includes(_id)) {
       // If the chip is already selected, remove it from the selection
-      setSelectedChips(selectedChips.filter(chipId => chipId !== name));
+      setSelectedChips(selectedChips.filter(chipId => chipId !== _id));
     } else {
       // Otherwise, add the chip to the selection
-      setSelectedChips([...selectedChips, name]);
+      setSelectedChips([...selectedChips, _id]);
     }
   };
 
@@ -116,14 +126,16 @@ export default PersonalDetails = () => {
       <ScrollView contentContainerStyle={styles.container}>
         <View style={styles.chipContainer}>
           {activities.map(item => {
-            const isSelected = selectedChips.includes(item.name);
+            const isSelected = selectedChips.includes(item._id);
             return (
               <TouchableOpacity
                 key={item.name}
                 style={[
                   isSelected ? styles.selectedChip : styles.unSelectedChip,
                 ]}
-                onPress={() => toggleChip(item.name)} // Toggle the chip selection
+                onPress={() => {
+                  toggleChip(item._id);
+                }} // Toggle the chip selection
               >
                 <Text
                   style={[

@@ -12,9 +12,14 @@ import {FilledButton} from '../../components/FilledButton';
 import {InputField} from '../../components/InputField';
 import {black, grey} from '../../theme/Colors';
 import {APIServiceGETWithQueryParam} from '../../utils/APIService';
-import {CHECK_USERNAME, ROUTE_PROFILE_SETUP} from '../../utils/Constants';
+import {
+  CHECK_EMAIL,
+  CHECK_USERNAME,
+  ROUTE_PROFILE_SETUP,
+} from '../../utils/Constants';
 import {ErrorMessageWithDescription} from '../../utils/FlashMessage';
 import {checkPermission, requestPermission} from '../../utils/PermissionUtils';
+import {apiCall} from '../../utils/apicall';
 
 export default PersonalDetails = ({route}) => {
   const navigation = useNavigation();
@@ -26,6 +31,8 @@ export default PersonalDetails = ({route}) => {
   const [usernameSuccessMsg, setUsernameSuccessMsg] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
+  const [emailSuccess, setEmailSuccess] = useState(false);
+  const [emailSuccessMsg, setEmailSuccessMsg] = useState('');
   const [password, setPassword] = useState('');
   const [dateOfBirth, setDateOfBirth] = useState('');
   const [location, setLocation] = useState('');
@@ -51,17 +58,40 @@ export default PersonalDetails = ({route}) => {
   const checkUsername = async userName => {
     try {
       const res = await APIServiceGETWithQueryParam(userName, CHECK_USERNAME);
-      if (res.statusCode == 200) {
-        console.log('checkusername', res);
+      if (!res.data.includes(userName)) {
+        console.log('checkusername', true);
         setUsernameSuccess(true);
         setUsernameSuccessMsg('Username avaliable');
-      } else if (res.statusCode == 400) {
-        //console.log('false');
-        //  ErrorMessage(res.message);
+      } else {
+        setUsernameSuccess(false);
+        setUsernameSuccessMsg('Username unavaliable');
       }
     } catch (error) {
       console.log(error, typeof error);
     }
+  };
+
+  const checkEmail = async email => {
+    var check;
+    try {
+      const res = await apiCall('GET', CHECK_EMAIL, null, {email: email});
+      if (res.statusCode == 200) {
+        console.log(res);
+        if (res.data.exist) {
+          setEmailSuccess(true);
+          setEmailSuccessMsg('Email avaliable');
+        }
+        check = false;
+      } else if (res.statusCode == 400) {
+        //console.log('false');
+        //  ErrorMessage(res.message);
+      }
+      check = false;
+    } catch (error) {
+      console.log(error, typeof error);
+      check = false;
+    }
+    return check;
   };
 
   const validateForm = () => {
@@ -87,6 +117,8 @@ export default PersonalDetails = ({route}) => {
         'Invalid Email Address',
         'Please input a valid email address',
       );
+    }
+    if (!checkEmail()) {
       return;
     }
 
@@ -234,6 +266,8 @@ export default PersonalDetails = ({route}) => {
           inputMode={'email'}
           value={email}
           onChangeText={value => setEmail(value)}
+          success={emailSuccess}
+          successMsg={emailSuccessMsg}
           placeholder={'email@thro.com'}
         />
 

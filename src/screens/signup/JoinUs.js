@@ -19,6 +19,7 @@ import {
 } from '../../utils/APIService';
 import {
   ROUTE_VERIFY_OTP,
+  ROUTE_WEBVIEW,
   SEND_OTP_FOR_SIGNUP,
   VERIFY_OTP,
 } from '../../utils/Constants';
@@ -26,6 +27,8 @@ import {showMessage} from 'react-native-flash-message';
 import {ErrorMessage} from '../../utils/FlashMessage';
 import {InputField} from '../../components/InputField';
 import OTPVerify from '../OTPVerify';
+import ActivityIndicatorComponent from '../../utils/ActivityIndicator';
+import {apiCall} from '../../utils/apicall';
 
 export default JoinUs = () => {
   const [tncCheck, setTncCheck] = useState(true);
@@ -34,6 +37,7 @@ export default JoinUs = () => {
   const [errorMsg, setErrorMsg] = useState('');
   const [error, setError] = useState('');
   const navigation = useNavigation();
+  const [loading, setLoading] = useState(false);
 
   /*  useEffect(() => {}, focus); */
 
@@ -46,25 +50,37 @@ export default JoinUs = () => {
     }
 
     try {
+      setLoading(true);
       const request = {
         mobileNo: mobileNo,
       };
-      const res = await APIServicePOST(request, SEND_OTP_FOR_SIGNUP);
+      const res = await apiCall(
+        'POST',
+        SEND_OTP_FOR_SIGNUP,
+        request,
+        null,
+        null,
+        null,
+      );
       if (res.statusCode == 200) {
+        setLoading(false);
         navigation.navigate(ROUTE_VERIFY_OTP, {
           from: 'JoinUs',
           mobileNo: mobileNo,
         });
       } else if (res.statusCode == 400) {
+        setLoading(false);
         ErrorMessage(res.message);
       }
     } catch (error) {
+      setLoading(false);
       console.log(error, typeof error);
     }
   };
 
   return (
     <SafeAreaView style={{height: '100%', marginHorizontal: 30}}>
+      <ActivityIndicatorComponent text="Signing Up..." visible={loading} />
       <Text
         style={{
           marginTop: '35%',
@@ -114,7 +130,7 @@ export default JoinUs = () => {
           {errorMsg}{' '}
         </Text>
       )}
-      <View style={{flexDirection: 'row', marginTop: 10}}>
+      <View style={{flexDirection: 'row', marginTop: 10, alignItems: 'center'}}>
         <CheckBox
           isChecked={tncCheck}
           onClick={() => {
@@ -135,7 +151,10 @@ export default JoinUs = () => {
           I read and accept
         </Text>
 
-        <TouchableOpacity /* onPress={{}} */>
+        <TouchableOpacity
+          onPress={() => {
+            navigation.navigate(ROUTE_WEBVIEW);
+          }}>
           <Text
             style={{
               marginStart: 5,

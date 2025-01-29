@@ -17,6 +17,7 @@ export default Splash = () => {
 
   const getLandingPage = async () => {
     await getLocalData(SESSION_TOKEN).then(res => {
+      console.log('session', res);
       if (res == undefined) {
         navigation.navigate(ROUTE_SIGN_IN);
       } else {

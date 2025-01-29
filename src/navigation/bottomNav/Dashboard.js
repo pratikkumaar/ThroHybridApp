@@ -1,4 +1,6 @@
+import messaging from '@react-native-firebase/messaging';
 import {useNavigation} from '@react-navigation/native';
+import moment from 'moment';
 import {useEffect, useState} from 'react';
 import {
   FlatList,
@@ -14,6 +16,8 @@ import CatchIcon from '../../assets/svgs/CatchIcon';
 import FilterIcon from '../../assets/svgs/FilterIcon';
 import LocationIcon from '../../assets/svgs/LocationIcon';
 import ThroIcon from '../../assets/svgs/ThroIcon';
+import CustomPopup from '../../components/CustomPopUp';
+import {FilledButton} from '../../components/FilledButton';
 import {TitleBarHeader} from '../../components/TitleBarHeader';
 import {
   headingColor,
@@ -24,170 +28,134 @@ import {
 } from '../../theme/Colors';
 import {
   ACTIVITY,
-  FILTER_THRO,
+  BASE_URL,
+  GET_THROS,
   ROUTE_FILTER_THRO,
   ROUTE_THRO_DETAILS,
-  THRO_DETAILS,
+  SESSION_TOKEN,
 } from '../../utils/Constants';
+import {getLocalData} from '../../utils/LocalStorage';
+import NetworkService from '../../utils/NetworkService';
+import {formateDate} from '../../components/DateFormatter';
 
 export default Dashboard = () => {
   const navigation = useNavigation();
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [popupVisible, setPopupVisible] = useState(false);
+  const [authToken, setAuthToken] = useState('');
+  const [throData, setThroData] = useState([]);
 
-  useEffect(() => {});
+  const [fcmToken, setFcmToken] = useState('');
 
-  const data = [
-    {
-      image: '1',
-      userName: 'Prateek',
-      userAge: '28',
-      userRating: 4.5,
-      eventName: 'Cricket Turf Match 10 Overs',
-      eventLocation: 'The Smash, Sector 12, Gurgaon',
-      eventStartDate: '31 Aug, 09:30 PM',
-      noOfCatches: '16',
-      noOfThros: '22',
-    },
-    {
-      image: '1',
-      userName: 'John',
-      userAge: '19',
-      userRating: 4,
-      eventName: 'Meeting Core Team',
-      eventLocation: 'CCD, Sector 31, Gurgaon',
-      eventStartDate: '30 Aug, 09:30 PM',
-      noOfCatches: '3',
-      noOfThros: '5',
-    },
-    {
-      image: '1',
-      userName: 'John',
-      userAge: '19',
-      userRating: 4,
-      eventName: 'Dance Class Opening',
-      eventLocation: 'CCD, Sector 31, Gurgaon',
-      eventStartDate: '30 Aug, 09:30 PM',
-      noOfCatches: '3',
-      noOfThros: '5',
-    },
-    {
-      image: '1',
-      userName: 'John',
-      userAge: '19',
-      userRating: 4,
-      eventName: 'Coffee Date',
-      eventLocation: 'CCD, Sector 31, Gurgaon',
-      eventStartDate: '30 Aug, 09:30 PM',
-      noOfCatches: '0',
-      noOfThros: '1',
-    },
-    {
-      image: '1',
-      userName: 'John',
-      userAge: '19',
-      userRating: 4,
-      eventName: 'Meeting Core Team',
-      eventLocation: 'CCD, Sector 31, Gurgaon',
-      eventStartDate: '30 Aug, 09:30 PM',
-      noOfCatches: '3',
-      noOfThros: '5',
-    },
-    {
-      image: '1',
-      userName: 'John',
-      userAge: '19',
-      userRating: 4,
-      eventName: 'Meeting Core Team',
-      eventLocation: 'CCD, Sector 31, Gurgaon',
-      eventStartDate: '30 Aug, 09:30 PM',
-      noOfCatches: '3',
-      noOfThros: '5',
-    },
-  ];
+  const getSession = async () => {
+    await getLocalData(SESSION_TOKEN).then(res => {
+      console.log('session', res);
+      setAuthToken(res);
+    });
 
-  const renderItem = ({item}) => (
-    <TouchableOpacity
-      style={styles.item}
-      onPress={() => {
-        navigation.navigate(ROUTE_THRO_DETAILS);
-      }}>
-      <View style={{flex: 3, alignItems: 'center'}}>
-        <Image
-          style={{height: 80, aspectRatio: 1, borderRadius: 40}}
-          source={require('../../assets/images/user1.png')}
-        />
+    setFcmToken(await messaging().getToken());
 
-        <Text
-          style={{
-            color: headingColor,
-            fontSize: 13,
-            fontFamily: 'Nunito-Medium',
-          }}>
-          {item.userName + "'" + item.userAge}
-        </Text>
+    console.log('Fcm-->', await messaging().getToken());
+  };
 
-        <Rating
-          readonly={true}
-          ratingColor={primaryColor}
-          imageSize={16}
-          ratingCount={5}
-          startingValue={item.userRating}
-        />
-      </View>
-      <View style={{flex: 7, backgroundColor: white, alignSelf: 'center'}}>
-        <Text style={styles.textHeading}>{item.eventName}</Text>
-        <Text style={[styles.textRegular, {marginTop: 2}]}>
-          {item.eventLocation}
-        </Text>
+  useEffect(() => {
+    getThroEvents(authToken);
+  }, [authToken]);
 
-        <View style={{flexDirection: 'row', alignItems: 'baseline'}}>
-          <Text style={styles.textSubHeading}>{item.eventStartDate}</Text>
-          <Text style={styles.textError}> (Expiring Soon)</Text>
-        </View>
+  const handleAccept = () => {
+    console.log('Accepted');
+    setPopupVisible(false);
+  };
 
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            marginTop: 5,
-            justifyContent: 'space-between',
-          }}>
-          <TouchableOpacity
+  const handleDecline = () => {
+    console.log('Declined');
+    setPopupVisible(false);
+  };
+
+  useEffect(() => {
+    getSession();
+  }, []);
+
+  const queryParams = {
+    page: 1,
+    limit: 1,
+  };
+
+  useEffect(() => {}, [throData]);
+
+  const renderItemThro = ({item}) => {
+    return (
+      <TouchableOpacity
+        style={styles.item}
+        onPress={() => {
+          navigation.navigate(ROUTE_THRO_DETAILS);
+        }}>
+        <View style={{flex: 3, alignItems: 'center'}}>
+          <Image
+            style={{height: 80, aspectRatio: 1, borderRadius: 40}}
+            source={{uri: item.creator.profilePicture}}
+          />
+
+          <Text
             style={{
-              backgroundColor: primaryColor,
-              borderRadius: 30,
-              alignItems: 'center',
-              justifyContent: 'center',
+              color: headingColor,
+              fontSize: 13,
+              fontFamily: 'Nunito-Medium',
             }}>
-            <Text
-              style={{
-                color: white,
-                fontWeight: '500',
-                fontSize: 15,
-                paddingHorizontal: 15,
-                marginVertical: 4,
-              }}>
-              Catch
-            </Text>
-          </TouchableOpacity>
-          <View style={{marginEnd: 20, flexDirection: 'row'}}>
-            <View style={{flexDirection: 'row'}}>
-              <CatchIcon />
-              <Text style={[styles.textRegular]}> {item.noOfCatches}</Text>
-            </View>
+            {item.creator.userName}
+          </Text>
 
-            <View style={{flexDirection: 'row', marginStart: 10}}>
-              <ThroIcon />
-              <Text style={[styles.textRegular]}>{item.noOfThros}</Text>
+          <Rating
+            readonly={true}
+            ratingColor={primaryColor}
+            imageSize={16}
+            ratingCount={5}
+            startingValue={3}
+          />
+        </View>
+        <View style={{flex: 7, backgroundColor: white, alignSelf: 'center'}}>
+          <Text style={styles.textHeading}>
+            {item.activity + ' - ' + item.title}
+          </Text>
+          <Text numberOfLines={2} style={[styles.textRegular, {marginTop: 2}]}>
+            {item.address}
+          </Text>
+
+          <View style={{flexDirection: 'row', alignItems: 'baseline'}}>
+            <Text style={styles.textSubHeading}>
+              {formateDate(item.startTimestamp)}
+            </Text>
+            {/* <Text style={styles.textError}> (Expiring Soon)</Text> */}
+          </View>
+
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              marginTop: 5,
+              justifyContent: 'space-between',
+            }}>
+            <FilledButton lable={'Catch'} height={30} width={80}></FilledButton>
+            <View style={{marginEnd: 20, flexDirection: 'row'}}>
+              <View style={{flexDirection: 'row'}}>
+                <CatchIcon />
+                <Text style={[styles.textRegular]}> {item.catchSentCount}</Text>
+              </View>
+
+              <View style={{flexDirection: 'row', marginStart: 10}}>
+                <ThroIcon />
+                <Text style={[styles.textRegular]}>
+                  {item.catchAcceptedCount}
+                </Text>
+              </View>
             </View>
           </View>
         </View>
-      </View>
-    </TouchableOpacity>
-  );
+      </TouchableOpacity>
+    );
+  };
 
   const renderActivities = ({item, index}) => {
-    console.log('id', index);
     // Determine background color based on whether the item is selected
     const backgroundColor =
       index === selectedIndex
@@ -226,11 +194,26 @@ export default Dashboard = () => {
     );
   };
 
+  const getThroEvents = async token => {
+    const data = await NetworkService.get(
+      BASE_URL + GET_THROS,
+      queryParams,
+      token,
+    );
+    console.log('getThroEvents', JSON.stringify(data.data.data));
+    setThroData(data.data.data);
+  };
+
   return (
     <SafeAreaView style={{height: '100%', backgroundColor: white}}>
+      {/*   <ActivityIndicatorComponent
+        visible={true}
+        text="Fetching Data..."
+        //  onClose={() => setLoading(false)} // Optional close handler
+      /> */}
       <TitleBarHeader
         leftIcon={<LocationIcon />}
-        titleBarText={'Thro'}
+        titleBarText={'Nearby Thros'}
         rightIcon={<FilterIcon />}
         onLeftPressed={() => {}}
         onRightPressed={() => {
@@ -239,23 +222,35 @@ export default Dashboard = () => {
         elevation={10}
       />
 
-      <FlatList
-        data={ACTIVITY}
-        style={{marginHorizontal: 25, marginBottom: 10}}
-        renderItem={renderActivities}
-        horizontal={true}
-        ItemSeparatorComponent={<View style={{margin: 5}}></View>}
-        keyExtractor={(item, index) => index.toString()}
-        extraData={selectedIndex}
+      <View>
+        <FlatList
+          data={ACTIVITY}
+          style={{
+            marginHorizontal: 25,
+            marginBottom: 10,
+          }}
+          renderItem={renderActivities}
+          horizontal={true}
+          ItemSeparatorComponent={<View style={{margin: 5}}></View>}
+          keyExtractor={(item, index) => index.toString()}
+          extraData={selectedIndex}
+        />
+      </View>
+
+      <CustomPopup
+        visible={popupVisible}
+        message="Are you sure you want to catch this thro?"
+        onAccept={handleAccept}
+        onDecline={handleDecline}
+        acceptText="Yes"
+        declineText="No"
       />
 
       <FlatList
-        data={data}
-        renderItem={renderItem}
+        data={throData}
+        renderItem={renderItemThro}
         keyExtractor={item => item.id}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
-        // ListHeaderComponent={() => <Text style={styles.header}>Header</Text>}
-        //ListFooterComponent={() => <Text style={styles.footer}>Footer</Text>}
       />
     </SafeAreaView>
   );
@@ -288,7 +283,7 @@ const styles = StyleSheet.create({
   },
   textSubHeading: {
     fontSize: 14,
-    fontFamily: 'Nunito-Medium',
+    fontFamily: 'Nunito-Bold',
     color: headingColor,
   },
   textRegular: {

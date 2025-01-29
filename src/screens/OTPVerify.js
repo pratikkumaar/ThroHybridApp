@@ -4,7 +4,6 @@ import {SafeAreaView, Text, View} from 'react-native';
 import OTPTextView from 'react-native-otp-textinput';
 import {FilledButton} from '../components/FilledButton';
 import {black, grey, primaryColor} from '../theme/Colors';
-import {APIServicePOST} from '../utils/APIService';
 import {
   ROUTE_BOTTOM_NAVIGATION_HOST,
   ROUTE_CHOOSE_INTERESTS,
@@ -12,9 +11,12 @@ import {
   SESSION_TOKEN,
   USER_SESSION_FOR_SIGNUP,
   VERIFY_LOGIN_OTP,
+  VERIFY_SIGNUP_OTP,
 } from '../utils/Constants';
 import {ErrorMessage} from '../utils/FlashMessage';
 import {storeLocalData} from '../utils/LocalStorage';
+import {apiCall} from '../utils/apicall';
+import ActivityIndicatorComponent from '../utils/ActivityIndicator';
 
 export default SignIn = ({route}) => {
   const {from} = route.params;
@@ -22,6 +24,7 @@ export default SignIn = ({route}) => {
   const [otp, setOtp] = useState('');
   const [focus, setFocus] = useState(false);
   const navigation = useNavigation();
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {}, focus);
 
@@ -35,15 +38,33 @@ export default SignIn = ({route}) => {
       return;
     }
     try {
-      const request = {
+      setLoading(true);
+      const loginReques = {
         mobileNo: mobileNo,
         otp: otp,
       };
-      //callPostAPI(SEND_OTP_FOR_LOGIN, undefined, navigation, request);
-      const res = await APIServicePOST(request, VERIFY_LOGIN_OTP);
-      console.log('res----->', res);
-      if (res.statusCode == 200) {
-        if (from == 'JoinUs') {
+      const request = {
+        mobileNo: mobileNo,
+        otp: otp,
+        type:
+          from == 'JoinUs'
+            ? 'SIGNUP'
+            : from == 'ForgotPassword'
+            ? 'FORGOT_PASSWORD'
+            : null,
+      };
+      console.log(request);
+      if (from == 'JoinUs') {
+        const res = await apiCall(
+          'POST',
+          VERIFY_SIGNUP_OTP,
+          request,
+          null,
+          false,
+          '',
+        );
+        if (res.statusCode == 200) {
+          setLoading(false);
           await storeLocalData(USER_SESSION_FOR_SIGNUP, res.data.authToken);
           if (res.data.interests.length == 0 && res.data.userName.length == 0) {
             navigation.navigate(ROUTE_PERSONAL_DETAILS, {
@@ -56,21 +77,38 @@ export default SignIn = ({route}) => {
               authToken: res.data.authToken,
             });
           }
-        } else if (from == 'SignIn') {
+        } else if (res.statusCode == 400) {
+          setLoading(false);
+          ErrorMessage(res.message);
+        }
+      } else if (from == 'SignIn') {
+        const res = await apiCall(
+          'POST',
+          VERIFY_LOGIN_OTP,
+          loginReques,
+          null,
+          false,
+          null,
+        );
+        if (res.statusCode == 200) {
+          setLoading(false);
           await storeLocalData(SESSION_TOKEN, res.data.authToken);
           navigation.navigate(ROUTE_BOTTOM_NAVIGATION_HOST);
-        } else if (from == 'ForgotPassword') {
+        } else if (res.statusCode == 400) {
+          setLoading(false);
+          ErrorMessage(res.message);
         }
-      } else if (res.statusCode == 400) {
-        ErrorMessage(res.message);
+      } else if (from == 'ForgotPassword') {
       }
     } catch (error) {
+      setLoading(false);
       console.log(error, typeof error);
     }
   };
 
   return (
     <SafeAreaView style={{height: '100%', marginHorizontal: 30}}>
+      <ActivityIndicatorComponent text="Verifing OTP..." visible={loading} />
       <Text
         style={{
           marginTop: '35%',
